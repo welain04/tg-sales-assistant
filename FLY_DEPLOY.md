@@ -9,6 +9,34 @@ Telegram-бот работает в режиме **long polling** — на Fly.i
 - Git-репозиторий с проектом (или деплой из локальной папки)
 - Заполненный локальный `.env` — секреты перенесёте на Fly
 
+## GitHub Actions (автодеплой)
+
+При `fly launch` токен в GitHub часто **не добавляется автоматически**. Без него CI падает с `exit code 1` за секунду.
+
+### 1. Создать deploy-токен Fly
+
+```bash
+fly tokens create deploy -a tg-sales-assistant
+```
+
+Скопируйте выданный токен (показывается один раз).
+
+### 2. Добавить секрет в GitHub
+
+Репозиторий → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+
+| Name | Value |
+|---|---|
+| `FLY_API_TOKEN` | токен из шага 1 |
+
+### 3. Запушить изменения
+
+После пуша в `main` workflow `.github/workflows/fly-deploy.yml` задеплоит бот автоматически.
+
+Проверка: [Actions](https://github.com/welain04/tg-sales-assistant/actions)
+
+---
+
 ## Шаг 1. Установить flyctl
 
 **Windows (PowerShell):**
