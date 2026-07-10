@@ -5,14 +5,17 @@ from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from src.config import settings
+from src.injection_guard import INJECTION_SAFE_RESPONSE, is_prompt_injection
 from src.intents import answer_needs_escalation, wants_manager
 from src.llm import AssistantLLM
 from src.notifications import notify_manager_escalation, notify_manager_lead
+from src.output_guard import sanitize_llm_answer
 from src.qa_fallback import answer_from_knowledge, generic_qa_fallback
-from src.rag import retrieve_context
-from src.recommendation import recommend_from_choices
+from src.rag import best_chunk_score, retrieve_context
+from src.recommendation import match_known_program, recommend_from_choices
 from src.session import FlowState, QA_CHECK_QUESTION, UserSession, WELCOME_MESSAGE
 from src.sheets import submit_lead
+from src.topic_guard import check_topic
 from src.validators import has_no_more_questions, is_valid_name, parse_email
 
 logger = logging.getLogger(__name__)
@@ -87,6 +90,60 @@ async def _send_qualification_question(
         "\n\n".join(text_parts),
         reply_markup=_build_qualification_keyboard(session.qualification_index),
     )
+
+
+async def _reply_if_injection(
+    update: Update,
+    session: UserSession,
+    user_text: str,
+) -> bool:
+    if not is_prompt_injection(user_text):
+        return False
+
+    message = INJECTION_SAFE_RESPONSE
+    if session.state == FlowState.QUALIFICATION:
+        message = (
+            f"{INJECTION_SAFE_RESPONSE}\n\n"
+            "Выберите ответ кнопкой под вопросом."
+        )
+    elif session.state in (FlowState.QA, FlowState.AWAITING_QA_CHECK):
+        message = f"{INJECTION_SAFE_RESPONSE}\n\n{QA_CHECK_QUESTION}"
+    elif session.state == FlowState.COLLECT_NAME:
+        message = f"{INJECTION_SAFE_RESPONSE}\n\nНапишите ваше имя."
+    elif session.state == FlowState.COLLECT_EMAIL:
+        message = f"{INJECTION_SAFE_RESPONSE}\n\nУкажите ваш email."
+
+    await update.message.reply_text(message)
+    return True
+
+
+async def _reply_if_off_topic(
+    update: Update,
+    session: UserSession,
+    user_text: str,
+    *,
+    context: ContextTypes.DEFAULT_TYPE | None = None,
+    user_message: str | None = None,
+) -> bool:
+    if session.state not in (FlowState.QA, FlowState.AWAITING_QA_CHECK):
+        return False
+
+    topic_result = check_topic(user_text)
+    if topic_result is None:
+        return False
+
+    response, needs_escalation = topic_result
+    if needs_escalation and context is not None:
+        await _handle_manager_request(
+            update,
+            context,
+            "Клиент интересуется индивидуальными условиями",
+            user_message=user_message or user_text,
+        )
+
+    await update.message.reply_text(f"{response}\n\n{QA_CHECK_QUESTION}")
+    session.state = FlowState.AWAITING_QA_CHECK
+    return True
 
 
 async def start_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -173,6 +230,9 @@ async def handle_flow_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     session = get_session(context)
+    if await _reply_if_injection(update, session, user_text):
+        return
+
     llm: AssistantLLM = context.application.bot_data["llm"]
     knowledge = context.application.bot_data["knowledge"]
 
@@ -268,10 +328,13 @@ async def _finish_qualification(
             session.qualification_answers,
             rag_context,
         )
-        if llm_program and llm_program != "уточните у менеджера":
-            level, program = llm_level, llm_program
+        matched_program = match_known_program(llm_program)
+        if matched_program:
+            level, program = matched_program.level, matched_program.program
             if llm_explanation:
                 explanation = llm_explanation
+        else:
+            logger.warning("LLM returned unknown program, using rule-based result: %s", llm_program)
     except Exception:
         logger.warning("LLM recommendation unavailable, using rule-based result", exc_info=True)
 
@@ -305,6 +368,15 @@ async def _handle_qa(
         session.state = FlowState.AWAITING_QA_CHECK
         return
 
+    if await _reply_if_off_topic(
+        update,
+        session,
+        user_text,
+        context=context,
+        user_message=user_text,
+    ):
+        return
+
     rag_context = retrieve_context(
         query=user_text,
         chunks=knowledge,
@@ -312,23 +384,28 @@ async def _handle_qa(
     )
 
     answer = answer_from_knowledge(user_text, knowledge)
+    force_escalation = False
 
     if not answer:
-        try:
-            answer = await llm.reply(
-                user_text,
-                rag_context,
-                session.qa_history,
-                extra_system=(
-                    "Результат подбора программы для этого клиента ещё не озвучен. "
-                    "Не называй конкретную рекомендованную программу и уровень клиента. "
-                    "Отвечай только на общие вопросы о продуктах школы. "
-                    "Если в контексте нет ответа — честно скажи об этом и предложи менеджера."
-                ),
-            )
-        except Exception:
-            logger.warning("LLM QA unavailable, using knowledge fallback", exc_info=True)
-            answer = answer_from_knowledge(user_text, knowledge) or generic_qa_fallback()
+        if best_chunk_score(user_text, knowledge) == 0:
+            answer = generic_qa_fallback()
+        else:
+            try:
+                answer = await llm.reply(
+                    user_text,
+                    rag_context,
+                    session.qa_history,
+                    extra_system=(
+                        "Результат подбора программы для этого клиента ещё не озвучен. "
+                        "Не называй конкретную рекомендованную программу и уровень клиента. "
+                        "Отвечай только на общие вопросы о продуктах школы. "
+                        "Если в контексте нет ответа — честно скажи об этом и предложи менеджера."
+                    ),
+                )
+                answer, force_escalation = sanitize_llm_answer(answer, rag_context)
+            except Exception:
+                logger.warning("LLM QA unavailable, using knowledge fallback", exc_info=True)
+                answer = answer_from_knowledge(user_text, knowledge) or generic_qa_fallback()
 
     session.qa_history.append({"role": "user", "content": user_text})
     session.qa_history.append({"role": "assistant", "content": answer})
@@ -336,7 +413,7 @@ async def _handle_qa(
 
     session.state = FlowState.AWAITING_QA_CHECK
 
-    if answer_needs_escalation(answer):
+    if force_escalation or answer_needs_escalation(answer):
         await _handle_manager_request(
             update,
             context,
@@ -371,6 +448,15 @@ async def _handle_qa_check(
         await update.message.reply_text(
             "Отлично! Чтобы получить итоговую рекомендацию, напишите ваше имя."
         )
+        return
+
+    if await _reply_if_off_topic(
+        update,
+        session,
+        user_text,
+        context=context,
+        user_message=user_text,
+    ):
         return
 
     session.state = FlowState.QA

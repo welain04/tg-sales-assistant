@@ -7,6 +7,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 from src.config import settings
 from src.flow import handle_flow_callback, handle_flow_message, reset_session, start_flow
 from src.llm import AssistantLLM
+from src.prompts import load_system_prompt
 from src.rag import load_knowledge
 
 logging.basicConfig(
@@ -42,12 +43,15 @@ def main() -> None:
     knowledge = load_knowledge(settings.knowledge_dir)
     logger.info("Loaded %s knowledge chunks from %s", len(knowledge), settings.knowledge_dir)
 
+    system_prompt = load_system_prompt(settings.system_prompt_path)
+    logger.info("Loaded system prompt from %s", settings.system_prompt_path)
+
     application = (
         Application.builder()
         .token(settings.telegram_bot_token)
         .build()
     )
-    application.bot_data["llm"] = AssistantLLM()
+    application.bot_data["llm"] = AssistantLLM(system_prompt)
     application.bot_data["knowledge"] = knowledge
 
     application.add_handler(CommandHandler("start", start_command))

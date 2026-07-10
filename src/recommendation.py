@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from src.session import QUALIFICATION_STEPS
@@ -56,6 +57,30 @@ PROGRAMS: tuple[ProgramRecommendation, ...] = (
         ),
     ),
 )
+
+
+def _normalize_program_name(name: str) -> str:
+    normalized = name.strip().lower().replace("ё", "е")
+    return re.sub(r"[«»\"'']", "", normalized)
+
+
+def match_known_program(program_name: str) -> ProgramRecommendation | None:
+    normalized = _normalize_program_name(program_name)
+    if not normalized:
+        return None
+
+    for program in PROGRAMS:
+        candidates = (
+            _normalize_program_name(program.program),
+            _normalize_program_name(program.level),
+        )
+        if any(
+            normalized == candidate or normalized in candidate or candidate in normalized
+            for candidate in candidates
+            if candidate
+        ):
+            return program
+    return None
 
 
 def recommend_from_choices(choice_indices: list[int]) -> tuple[str, str, str]:

@@ -45,6 +45,12 @@ def _score_chunk(query: str, chunk: KnowledgeChunk) -> int:
     return len(query_tokens & chunk_tokens)
 
 
+def best_chunk_score(query: str, chunks: list[KnowledgeChunk]) -> int:
+    if not chunks:
+        return 0
+    return max(_score_chunk(query, chunk) for chunk in chunks)
+
+
 def retrieve_context(
     query: str,
     chunks: list[KnowledgeChunk],
@@ -59,7 +65,7 @@ def retrieve_context(
         reverse=True,
     )
 
-    top_score = _score_chunk(query, ranked[0])
+    top_score = best_chunk_score(query, chunks)
     selected = ranked[:max_chunks] if top_score > 0 else ranked
 
     parts = []
