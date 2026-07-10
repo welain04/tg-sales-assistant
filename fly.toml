@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for tg-sales-assistant on 2026-07-11T01:44:42+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'tg-sales-assistant'
+primary_region = 'fra'
+
+[build]
+
+[deploy]
+  strategy = 'immediate'
+
+[env]
+  MAX_HISTORY_MESSAGES = '10'
+  MAX_RAG_CHUNKS = '3'
+  OPENAI_BASE_URL = 'https://api.groq.com/openai/v1'
+  OPENAI_FALLBACK_MODEL = 'llama-3.1-8b-instant'
+  OPENAI_MAX_TOKENS = '300'
+  OPENAI_MODEL = 'llama-3.3-70b-versatile'
+  OPENAI_TEMPERATURE = '0.3'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
