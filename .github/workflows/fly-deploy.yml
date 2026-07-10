@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy to Fly.io
-        run: flyctl deploy --depot=false --ha=false --remote-only
+        run: flyctl deploy --depot=false --ha=false --local-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: Ensure single instance
