@@ -29,7 +29,17 @@ tg-sales-assistant/
 └── .env
 ```
 
-## Быстрый старт
+## Запуск (продакшен)
+
+Бот работает на **Fly.io**. Деплой автоматический при push в `main` через GitHub Actions.
+
+1. Добавьте `FLY_API_TOKEN` в GitHub Secrets (см. [FLY_DEPLOY.md](FLY_DEPLOY.md))
+2. Push в `main` → Actions задеплоит бот
+3. **Не запускайте** `python main.py` локально — это вызовет конфликт с Fly
+
+Панель: https://fly.io/apps/tg-sales-assistant
+
+## Локальная разработка
 
 ```bash
 python -m venv .venv
@@ -47,6 +57,7 @@ pip install -r requirements.txt
 | `MANAGER_TELEGRAM_CHAT_ID` | Telegram ID менеджера для уведомлений (узнать: [@userinfobot](https://t.me/userinfobot)) |
 
 ```bash
+set ALLOW_LOCAL_RUN=1
 python main.py
 ```
 
