@@ -10,8 +10,8 @@ from src.intents import answer_needs_escalation, wants_manager
 from src.llm import AssistantLLM
 from src.notifications import notify_manager_escalation, notify_manager_lead
 from src.output_guard import sanitize_llm_answer
-from src.qa_fallback import answer_from_knowledge, generic_qa_fallback
-from src.rag import KnowledgeRetriever, format_retrieved_context
+from src.qa_fallback import answer_from_search, generic_qa_fallback
+from src.rag import KnowledgeChunk, KnowledgeRetriever, format_retrieval_log, format_retrieved_context
 from src.recommendation import match_known_program, recommend_from_choices
 from src.session import FlowState, QA_CHECK_QUESTION, UserSession, WELCOME_MESSAGE
 from src.sheets import submit_lead
@@ -384,13 +384,25 @@ async def _handle_qa(
     )
     rag_context = format_retrieved_context(retrieved)
     top_score = retrieved[0].similarity if retrieved else 0.0
+    search_chunks = [
+        KnowledgeChunk(source=item.source, text=item.text) for item in retrieved
+    ]
 
-    answer = answer_from_knowledge(user_text, knowledge)
+    logger.info(
+        "RAG retrieval: query=%r top_score=%.3f threshold=%.2f chunks=%s",
+        user_text,
+        top_score,
+        settings.rag_similarity_threshold,
+        format_retrieval_log(retrieved),
+    )
+
+    answer, answer_source = answer_from_search(user_text, search_chunks, knowledge)
     force_escalation = False
 
     if not answer:
         if top_score < settings.rag_similarity_threshold:
             answer = generic_qa_fallback()
+            answer_source = "generic_fallback"
         else:
             try:
                 answer = await llm.reply(
@@ -405,9 +417,21 @@ async def _handle_qa(
                     ),
                 )
                 answer, force_escalation = sanitize_llm_answer(answer, rag_context)
+                answer_source = "llm"
             except Exception:
                 logger.warning("LLM QA unavailable, using knowledge fallback", exc_info=True)
-                answer = answer_from_knowledge(user_text, knowledge) or generic_qa_fallback()
+                answer, answer_source = answer_from_search(user_text, search_chunks, knowledge)
+                if not answer:
+                    answer = generic_qa_fallback()
+                    answer_source = "generic_fallback"
+
+    logger.info(
+        "QA answer: query=%r source=%s top_score=%.3f answer_preview=%r",
+        user_text,
+        answer_source or "unknown",
+        top_score,
+        answer[:120] if answer else "",
+    )
 
     session.qa_history.append({"role": "user", "content": user_text})
     session.qa_history.append({"role": "assistant", "content": answer})

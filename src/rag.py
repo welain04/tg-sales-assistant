@@ -82,6 +82,25 @@ def format_retrieved_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def format_retrieval_log(
+    chunks: list[RetrievedChunk],
+    *,
+    preview_chars: int = 100,
+) -> str:
+    if not chunks:
+        return "none"
+
+    parts: list[str] = []
+    for index, chunk in enumerate(chunks, start=1):
+        doc_type = chunk.metadata.get("doc_type", "general")
+        preview = " ".join(chunk.text.split())[:preview_chars]
+        parts.append(
+            f"{index}:{chunk.source}/{doc_type} score={chunk.similarity:.3f} "
+            f"preview={preview!r}"
+        )
+    return " | ".join(parts)
+
+
 class KnowledgeRetriever:
     def __init__(self, config: Settings | None = None) -> None:
         self._config = config or settings

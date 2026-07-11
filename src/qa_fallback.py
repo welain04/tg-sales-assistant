@@ -206,6 +206,37 @@ def _installment_answer(chunks: list[KnowledgeChunk]) -> str | None:
     return None
 
 
+_LOCAL_FALLBACK_PATTERNS = (
+    *_CATALOG_PATTERNS,
+    *_PRICE_PATTERNS,
+    *_LEVEL_PATTERNS,
+    *_REFUND_PATTERNS,
+    *_INSTALLMENT_PATTERNS,
+    *_PACKAGE_PATTERNS,
+    *_RECOMMENDATION_PATTERNS,
+)
+
+
+def answer_from_search(
+    query: str,
+    search_chunks: list[KnowledgeChunk],
+    local_chunks: list[KnowledgeChunk],
+) -> tuple[str | None, str | None]:
+    """Сначала отвечает по результатам поиска, затем — по полной локальной базе."""
+    if search_chunks:
+        answer = answer_from_knowledge(query, search_chunks)
+        if answer:
+            return answer, "search_rule"
+
+    normalized = _normalize(query)
+    if _matches_any(normalized, _LOCAL_FALLBACK_PATTERNS):
+        answer = answer_from_knowledge(query, local_chunks)
+        if answer:
+            return answer, "local_rule"
+
+    return None, None
+
+
 def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | None:
     normalized = _normalize(query)
 
