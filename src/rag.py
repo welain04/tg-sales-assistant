@@ -31,6 +31,9 @@ def _split_into_chunks(text: str, source: str) -> list[KnowledgeChunk]:
     return [KnowledgeChunk(source=source, text=block) for block in blocks]
 
 
+_SKIP_KNOWLEDGE_NAMES = {"README.md", "catalog.yaml"}
+
+
 def load_knowledge(knowledge_dir: Path) -> list[KnowledgeChunk]:
     chunks: list[KnowledgeChunk] = []
     if not knowledge_dir.exists():
@@ -38,6 +41,8 @@ def load_knowledge(knowledge_dir: Path) -> list[KnowledgeChunk]:
 
     for path in sorted(knowledge_dir.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in {".txt", ".md"}:
+            continue
+        if path.name in _SKIP_KNOWLEDGE_NAMES:
             continue
         text = path.read_text(encoding="utf-8").strip()
         if not text:

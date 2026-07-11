@@ -27,7 +27,7 @@
     {
       "question": "какие есть программы?",
       "expected_source": "search_rule",
-      "must_contain": ["Финансист", "3000"],
+      "must_contain": ["Финансист", "2990"],
       "must_not_contain": []
     },
     {
@@ -45,7 +45,7 @@
     {
       "question": "сколько стоит базовый курс",
       "expected_source": "search_rule",
-      "must_contain": ["3000"],
+      "must_contain": ["2990"],
       "must_not_contain": []
     }
   ],

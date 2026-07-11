@@ -81,7 +81,7 @@ def _catalog_answer() -> str:
     lines = ["В школе «Финансист» 4 программы:"]
     for index, program in enumerate(PROGRAMS, start=1):
         lines.append(
-            f"{index}. {program.program} — {program.price}. {program.summary}."
+            f"{index}. {program.title} — {program.price}. {program.summary}."
         )
     return "\n".join(lines)
 
@@ -90,17 +90,17 @@ def _price_answer(query: str) -> str | None:
     normalized = _normalize(query)
     for program in PROGRAMS:
         if _program_mentioned(normalized, program):
-            return f"«{program.program}» стоит {program.price}."
+            return f"«{program.title}» стоит {program.price}."
     if _matches_any(normalized, _PRICE_PATTERNS):
         return "Стоимость программ:\n" + "\n".join(
-            f"• {program.program} — {program.price}" for program in PROGRAMS
+            f"• {program.title} — {program.price}" for program in PROGRAMS
         )
     return None
 
 
 def _program_mentioned(query: str, program) -> bool:
     markers = (
-        _normalize(program.program),
+        _normalize(program.title),
         _normalize(program.level),
     )
     for marker in markers:
@@ -125,7 +125,7 @@ def _find_program(query: str):
 
 def _program_answer(program) -> str:
     return (
-        f"«{program.program}» — {program.price}. "
+        f"«{program.title}» — {program.price}. "
         f"Уровень: {program.level}. {program.summary}."
     )
 
@@ -372,7 +372,7 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
 
     if _matches_any(normalized, _LEVEL_PATTERNS):
         return "Уровни программ:\n" + "\n".join(
-            f"• {program.level} — {program.program}" for program in PROGRAMS
+            f"• {program.level} — {program.title}" for program in PROGRAMS
         )
 
     program = _find_program(query)

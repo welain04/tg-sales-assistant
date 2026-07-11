@@ -7,27 +7,27 @@
   "cases": [
     {
       "question": "какие есть программы?",
-      "expected_sources": ["faq.md", "products.txt"],
-      "must_contain": ["Финансист", "3000", "5000"]
+      "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
+      "must_contain": ["Финансист", "2990", "5000"]
     },
     {
       "question": "сколько стоит базовый курс",
-      "expected_sources": ["faq.md", "products.txt"],
-      "must_contain": ["3000"]
+      "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
+      "must_contain": ["2990"]
     },
     {
       "question": "сколько стоит практикум личный бюджет",
-      "expected_sources": ["faq.md", "products.txt"],
+      "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
       "must_contain": ["5000"]
     },
     {
       "question": "сколько стоит курс первые инвестиции",
-      "expected_sources": ["faq.md", "products.txt"],
+      "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
       "must_contain": ["10000"]
     },
     {
       "question": "сколько стоит капитал под цели",
-      "expected_sources": ["faq.md", "products.txt"],
+      "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
       "must_contain": ["15000"]
     },
     {
@@ -42,12 +42,12 @@
     },
     {
       "question": "есть ли пакеты из нескольких курсов",
-      "expected_sources": ["faq.md"],
+      "expected_sources": ["generated/packages.md", "generated/price_faq.md"],
       "must_contain": ["Финансовый фундамент", "7000"]
     },
     {
       "question": "сколько длится обучение",
-      "expected_sources": ["faq.md"],
+      "expected_sources": ["faq.md", "generated/catalog.md"],
       "must_contain": ["недел"]
     },
     {
@@ -72,17 +72,17 @@
     },
     {
       "question": "какой курс выбрать новичку",
-      "expected_sources": ["faq.md", "products.txt"],
-      "must_contain": ["Финансовая база", "3000"]
+      "expected_sources": ["generated/price_faq.md", "generated/products.txt"],
+      "must_contain": ["Финансовая база", "2990"]
     },
     {
       "question": "расскажите о программе для растущего инвестора",
-      "expected_sources": ["faq.md", "products.txt"],
+      "expected_sources": ["generated/catalog.md", "generated/products.txt"],
       "must_contain": ["Первые инвестиции", "10000"]
     },
     {
       "question": "есть ли рассрочка",
-      "expected_sources": ["faq.md"],
+      "expected_sources": ["generated/packages.md"],
       "must_contain": ["рассрочк"]
     },
     {
@@ -97,12 +97,12 @@
     },
     {
       "question": "какие уровни программ есть",
-      "expected_sources": ["faq.md", "products.txt"],
+      "expected_sources": ["generated/catalog.md", "generated/products.txt"],
       "must_contain": ["уровн", "программ"]
     },
     {
       "question": "полная траектория пакет цена",
-      "expected_sources": ["faq.md"],
+      "expected_sources": ["generated/packages.md", "generated/price_faq.md"],
       "must_contain": ["28000"]
     }
   ]

@@ -63,7 +63,7 @@ def _has_unknown_program(answer: str, rag_context: str) -> bool:
     normalized_answer = _normalize(answer)
     normalized_context = _normalize(rag_context)
     for program in PROGRAMS:
-        compact = re.sub(r"[«»\"'']", "", _normalize(program.program))
+        compact = re.sub(r"[«»\"'']", "", _normalize(program.title))
         if len(compact) >= 12 and compact in normalized_answer and compact not in normalized_context:
             return True
     return False

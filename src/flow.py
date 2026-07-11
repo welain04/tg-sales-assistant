@@ -330,7 +330,7 @@ async def _finish_qualification(
         )
         matched_program = match_known_program(llm_program)
         if matched_program:
-            level, program = matched_program.level, matched_program.program
+            level, program = matched_program.level, matched_program.title
             if llm_explanation:
                 explanation = llm_explanation
         else:

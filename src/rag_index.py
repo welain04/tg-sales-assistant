@@ -17,6 +17,7 @@ from src.config import Settings, settings
 logger = logging.getLogger(__name__)
 
 _KNOWLEDGE_SUFFIXES = {".txt", ".md"}
+_SKIP_KNOWLEDGE_NAMES = {"README.md", "catalog.yaml"}
 _METADATA_FIELDS = (
     ("Тип", "doc_type"),
     ("Продукт", "product_name"),
@@ -118,6 +119,8 @@ def load_knowledge_documents(
 
     for path in sorted(knowledge_dir.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in _KNOWLEDGE_SUFFIXES:
+            continue
+        if path.name in _SKIP_KNOWLEDGE_NAMES:
             continue
 
         source = str(path.relative_to(knowledge_dir)).replace("\\", "/")

@@ -9,6 +9,8 @@ on:
       - main
     paths:
       - "knowledge/**"
+      - "scripts/build_knowledge.py"
+      - "src/catalog.py"
       - ".github/workflows/rag-knowledge.yml"
       - "tests/rag_eval.json"
       - "scripts/eval_rag.py"
@@ -19,6 +21,8 @@ on:
   pull_request:
     paths:
       - "knowledge/**"
+      - "scripts/build_knowledge.py"
+      - "src/catalog.py"
       - ".github/workflows/rag-knowledge.yml"
       - "tests/rag_eval.json"
       - "scripts/eval_rag.py"
@@ -41,6 +45,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Build knowledge from catalog.yaml
+        run: python scripts/build_knowledge.py
 
       - name: Reindex knowledge into Supabase
         if: github.event_name != 'pull_request'

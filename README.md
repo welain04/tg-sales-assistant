@@ -12,12 +12,31 @@ Telegram-бот **Алексей** — AI-ассистент отдела про
 6. **Google Таблица** — сохраняет имя, email, уровень, программу и ответы квалификации
 7. **Уведомления менеджеру** — в Telegram при новой заявке или если нужен живой ответ
 
+## База знаний
+
+Цены и программы — в одном файле `knowledge/catalog.yaml`. Подробная инструкция для заказчика: [knowledge/README.md](knowledge/README.md).
+
+```bash
+python scripts/build_knowledge.py   # собрать generated/ из catalog.yaml
+python scripts/reindex_knowledge.py # обновить векторный индекс в Supabase
+```
+
+```
+knowledge/
+├── catalog.yaml          # курсы, цены, пакеты — редактирует заказчик
+├── faq.md                # гарантии, оплата, общие FAQ
+└── generated/            # создаётся автоматически, не редактировать
+```
+
 ## Структура проекта
 
 ```
 tg-sales-assistant/
 ├── prompts/system.md
-├── knowledge/products.txt
+├── knowledge/catalog.yaml
+├── knowledge/faq.md
+├── knowledge/generated/            # автогенерация из catalog.yaml
+├── scripts/build_knowledge.py
 ├── scripts/google-apps-script.js   # код для Google Таблицы
 ├── src/
 │   ├── bot.py

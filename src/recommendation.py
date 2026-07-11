@@ -1,92 +1,18 @@
-import re
-from dataclasses import dataclass
-
+from src.catalog import Program, get_programs, match_known_program
 from src.session import QUALIFICATION_STEPS
 
 QUESTION_WEIGHTS = (1, 2, 2, 3)
 
-
-@dataclass(frozen=True)
-class ProgramRecommendation:
-    level: str
-    program: str
-    price: str
-    summary: str
-    explanation: str
-
-
-PROGRAMS: tuple[ProgramRecommendation, ...] = (
-    ProgramRecommendation(
-        level="Новичок в финансах",
-        program="Стартовый онлайн-курс «Финансовая база с нуля»",
-        price="3000 ₽",
-        summary="Учёт доходов и расходов, основа финансовой подушки",
-        explanation=(
-            "Сейчас важнее всего навести порядок в деньгах: понять доходы и расходы "
-            "и заложить основу финансовой подушки."
-        ),
-    ),
-    ProgramRecommendation(
-        level="Финансовый базовый уровень",
-        program="Практикум «Личный бюджет и первая дельта»",
-        price="5000 ₽",
-        summary="Рабочий бюджет и первая стабильная дельта",
-        explanation=(
-            "У вас уже есть базовое понимание финансов, но пока не выстроена стабильная "
-            "привычка копить — практикум поможет настроить бюджет и первую дельту."
-        ),
-    ),
-    ProgramRecommendation(
-        level="Растущий инвестор",
-        program="Курс «Первые инвестиции: от дельты к капиталу»",
-        price="10000 ₽",
-        summary="Базовые инструменты и первый портфель",
-        explanation=(
-            "У вас уже есть накопления и интерес к инвестициям — курс поможет освоить "
-            "базовые инструменты и собрать первый портфель."
-        ),
-    ),
-    ProgramRecommendation(
-        level="Осознанный инвестор с капиталом",
-        program="Персональная стратегия «Капитал под цели»",
-        price="15000 ₽",
-        summary="Стратегия распределения капитала под цели",
-        explanation=(
-            "У вас уже есть капитал и опыт — сейчас важно структурировать вложения "
-            "под долгосрочные цели и выстроить понятную стратегию."
-        ),
-    ),
-)
-
-
-def _normalize_program_name(name: str) -> str:
-    normalized = name.strip().lower().replace("ё", "е")
-    return re.sub(r"[«»\"'']", "", normalized)
-
-
-def match_known_program(program_name: str) -> ProgramRecommendation | None:
-    normalized = _normalize_program_name(program_name)
-    if not normalized:
-        return None
-
-    for program in PROGRAMS:
-        candidates = (
-            _normalize_program_name(program.program),
-            _normalize_program_name(program.level),
-        )
-        if any(
-            normalized == candidate or normalized in candidate or candidate in normalized
-            for candidate in candidates
-            if candidate
-        ):
-            return program
-    return None
+# Совместимость со старым кодом: рекомендации и fallback читают каталог из YAML.
+ProgramRecommendation = Program
+PROGRAMS = get_programs()
 
 
 def recommend_from_choices(choice_indices: list[int]) -> tuple[str, str, str]:
+    programs = get_programs()
     if len(choice_indices) != len(QUALIFICATION_STEPS):
-        fallback = PROGRAMS[0]
-        return fallback.level, fallback.program, fallback.explanation
+        fallback = programs[0]
+        return fallback.level, fallback.title, fallback.explanation
 
     weighted_sum = 0.0
     total_weight = 0
@@ -99,7 +25,15 @@ def recommend_from_choices(choice_indices: list[int]) -> tuple[str, str, str]:
         total_weight += weight
 
     level_index = round(weighted_sum / total_weight)
-    level_index = max(0, min(level_index, len(PROGRAMS) - 1))
-    program = PROGRAMS[level_index]
+    level_index = max(0, min(level_index, len(programs) - 1))
+    program = programs[level_index]
 
-    return program.level, program.program, program.explanation
+    return program.level, program.title, program.explanation
+
+
+__all__ = [
+    "PROGRAMS",
+    "ProgramRecommendation",
+    "match_known_program",
+    "recommend_from_choices",
+]
