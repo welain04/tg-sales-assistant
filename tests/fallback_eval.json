@@ -47,6 +47,12 @@
       "expected_source": "search_rule",
       "must_contain": ["@price:financial-base"],
       "must_not_contain": []
+    },
+    {
+      "question": "сколько стоит курс?",
+      "expected_source": "search_rule",
+      "must_contain": ["Самый доступный", "@price:financial-base", "@price:capital-goals"],
+      "must_not_contain": ["10 модулей"]
     }
   ],
   "sanitize_cases": [

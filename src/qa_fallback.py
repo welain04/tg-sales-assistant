@@ -77,6 +77,13 @@ def _matches_any(text: str, patterns: tuple[str, ...]) -> bool:
     return any(re.search(pattern, text) for pattern in patterns)
 
 
+def _is_generic_price_query(query: str) -> bool:
+    normalized = _normalize(query)
+    if not _matches_any(normalized, _PRICE_PATTERNS):
+        return False
+    return _find_program(query) is None
+
+
 def _catalog_answer() -> str:
     lines = ["В школе «Финансист» 4 программы:"]
     for index, program in enumerate(PROGRAMS, start=1):
@@ -92,9 +99,15 @@ def _price_answer(query: str) -> str | None:
         if _program_mentioned(normalized, program):
             return f"«{program.title}» стоит {program.price}."
     if _matches_any(normalized, _PRICE_PATTERNS):
-        return "Стоимость программ:\n" + "\n".join(
+        cheapest = min(PROGRAMS, key=lambda program: program.price_rub)
+        lines = [
+            f"Самый доступный курс — «{cheapest.short_title}» за {cheapest.price}.",
+            "Стоимость всех программ:",
+        ]
+        lines.extend(
             f"• {program.title} — {program.price}" for program in PROGRAMS
         )
+        return "\n".join(lines)
     return None
 
 
@@ -361,6 +374,11 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
         faq_answer = _find_faq_answer(query, chunks)
         if faq_answer:
             return faq_answer
+
+    if _is_generic_price_query(query):
+        price_answer = _price_answer(query)
+        if price_answer:
+            return price_answer
 
     faq_answer = _find_faq_answer(query, chunks)
     if faq_answer:
