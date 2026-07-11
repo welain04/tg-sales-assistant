@@ -45,6 +45,10 @@ _PACKAGE_PATTERNS = (
     r"нескольк\w+\s+курс",
 )
 
+_INSTALLMENT_PATTERNS = (
+    r"рассрочк",
+)
+
 _RECOMMENDATION_PATTERNS = (
     r"какой\s+курс\s+выбрать",
     r"что\s+выбрать",
@@ -191,6 +195,17 @@ def _extract_field(text: str, label: str) -> str | None:
     return match.group(1).strip().strip('"')
 
 
+def _installment_answer(chunks: list[KnowledgeChunk]) -> str | None:
+    for chunk in chunks:
+        for line in chunk.text.splitlines():
+            normalized_line = _normalize(line)
+            if normalized_line.startswith("рассрочка:") or (
+                "рассрочк" in normalized_line and "10000" in normalized_line
+            ):
+                return line.strip()
+    return None
+
+
 def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | None:
     normalized = _normalize(query)
 
@@ -204,6 +219,11 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
         )
         if refund_answer:
             return refund_answer
+
+    if _matches_any(normalized, _INSTALLMENT_PATTERNS):
+        installment_answer = _installment_answer(chunks)
+        if installment_answer:
+            return installment_answer
 
     if (
         _matches_any(normalized, _PACKAGE_PATTERNS)
