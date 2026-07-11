@@ -9,8 +9,17 @@ __pycache__
 .gitignore
 .idea
 .vscode
-*.md
-!FLY_DEPLOY.md
 terminals
 assets
-scripts
+tests
+eval_out.txt
+
+# Документация проекта — не нужна в образе
+README.md
+FLY_DEPLOY.md
+knowledge/README.md
+
+# Markdown вне knowledge/prompts — не нужен в образе
+*.md
+!knowledge/**/*.md
+!prompts/**/*.md
