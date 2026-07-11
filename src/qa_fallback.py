@@ -32,6 +32,14 @@ _LEVEL_PATTERNS = (
     r"для\s+начинающ",
 )
 
+_REFUND_PATTERNS = (
+    r"вернуть\s+деньг",
+    r"вернуть\s+оплат",
+    r"возврат",
+    r"вернут\s+деньг",
+    r"можно\s+ли\s+вернуть",
+)
+
 
 def _normalize(text: str) -> str:
     return text.strip().lower().replace("ё", "е")
@@ -92,19 +100,55 @@ def _program_answer(program) -> str:
     )
 
 
-def _chunk_answer(chunk: KnowledgeChunk) -> str:
+def _faq_answer(chunk: KnowledgeChunk) -> str | None:
+    answer = _extract_field(chunk.text, "Ответ")
+    if answer:
+        return answer
+    return None
+
+
+def _find_faq_answer(query: str, chunks: list[KnowledgeChunk]) -> str | None:
+    normalized = _normalize(query)
+    best_score = 0
+    best_answer: str | None = None
+
+    for chunk in chunks:
+        question = _extract_field(chunk.text, "Вопрос")
+        answer = _extract_field(chunk.text, "Ответ")
+        if not question or not answer:
+            continue
+
+        question_normalized = _normalize(question)
+        score = _score_chunk(query, chunk)
+        if normalized in question_normalized or question_normalized in normalized:
+            score += 3
+        if score > best_score:
+            best_score = score
+            best_answer = answer
+
+    return best_answer if best_score > 0 else None
+
+
+def _chunk_answer(chunk: KnowledgeChunk) -> str | None:
+    faq_answer = _faq_answer(chunk)
+    if faq_answer:
+        return faq_answer
+
     fields = {
         "Продукт": _extract_field(chunk.text, "Продукт"),
         "Цена": _extract_field(chunk.text, "Цена"),
         "Для кого": _extract_field(chunk.text, "Для кого"),
         "Результат": _extract_field(chunk.text, "Тезисно, какие результаты даст продукт"),
     }
-    product = fields["Продукт"] or "Программа"
+    product = fields["Продукт"]
     price = fields["Цена"] or ""
     audience = fields["Для кого"] or ""
     result = fields["Результат"] or ""
 
-    parts = [product]
+    if not product and not price and not audience and not result:
+        return None
+
+    parts = [product or "Программа"]
     if price:
         parts.append(price)
     if audience:
@@ -140,6 +184,15 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
     if program:
         return _program_answer(program)
 
+    faq_answer = _find_faq_answer(query, chunks)
+    if faq_answer:
+        return faq_answer
+
+    if _matches_any(normalized, _REFUND_PATTERNS):
+        refund_answer = _find_faq_answer("можно ли вернуть деньги если курс не подошел", chunks)
+        if refund_answer:
+            return refund_answer
+
     if chunks:
         ranked = sorted(
             chunks,
@@ -147,7 +200,9 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
             reverse=True,
         )
         if _score_chunk(query, ranked[0]) > 0:
-            return _chunk_answer(ranked[0])
+            chunk_answer = _chunk_answer(ranked[0])
+            if chunk_answer:
+                return chunk_answer
 
     return None
 
