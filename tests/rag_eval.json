@@ -1,0 +1,109 @@
+{
+  "thresholds": {
+    "recall_at_3": 0.85,
+    "recall_at_5": 0.95,
+    "mrr": 0.8
+  },
+  "cases": [
+    {
+      "question": "какие есть программы?",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["Финансист", "3000", "5000"]
+    },
+    {
+      "question": "сколько стоит базовый курс",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["3000"]
+    },
+    {
+      "question": "сколько стоит практикум личный бюджет",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["5000"]
+    },
+    {
+      "question": "сколько стоит курс первые инвестиции",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["10000"]
+    },
+    {
+      "question": "сколько стоит капитал под цели",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["15000"]
+    },
+    {
+      "question": "можно вернуть деньги",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["7 дней", "10%"]
+    },
+    {
+      "question": "можно ли вернуть деньги если курс не подошел",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["возврат", "20%"]
+    },
+    {
+      "question": "есть ли пакеты из нескольких курсов",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["Финансовый фундамент", "7000"]
+    },
+    {
+      "question": "сколько длится обучение",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["недел"]
+    },
+    {
+      "question": "что входит в стоимость курса",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["видеоурок", "сертификат"]
+    },
+    {
+      "question": "как быстро открывается доступ после оплаты",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["15 минут"]
+    },
+    {
+      "question": "есть ли сертификат после прохождения",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["сертификат"]
+    },
+    {
+      "question": "даете ли вы инвестиционные советы",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["нет", "образовательн"]
+    },
+    {
+      "question": "какой курс выбрать новичку",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["Финансовая база", "3000"]
+    },
+    {
+      "question": "расскажите о программе для растущего инвестора",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["Первые инвестиции", "10000"]
+    },
+    {
+      "question": "есть ли рассрочка",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["рассрочк"]
+    },
+    {
+      "question": "как связаться с менеджером",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["менеджер"]
+    },
+    {
+      "question": "можно ли учиться в своем темпе",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["асинхрон"]
+    },
+    {
+      "question": "какие уровни программ есть",
+      "expected_sources": ["faq.md", "products.txt"],
+      "must_contain": ["уровн", "программ"]
+    },
+    {
+      "question": "полная траектория пакет цена",
+      "expected_sources": ["faq.md"],
+      "must_contain": ["28000"]
+    }
+  ]
+}

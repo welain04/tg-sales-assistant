@@ -1,0 +1,58 @@
+# Этап 5: переиндексация knowledge/ в Supabase при изменениях
+# Этап 6: проверка качества vector search
+
+name: RAG Knowledge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "knowledge/**"
+      - ".github/workflows/rag-knowledge.yml"
+      - "tests/rag_eval.json"
+      - "scripts/eval_rag.py"
+      - "scripts/reindex_knowledge.py"
+      - "src/rag_index.py"
+      - "src/rag.py"
+      - "src/qa_fallback.py"
+  pull_request:
+    paths:
+      - "knowledge/**"
+      - ".github/workflows/rag-knowledge.yml"
+      - "tests/rag_eval.json"
+      - "scripts/eval_rag.py"
+      - "scripts/reindex_knowledge.py"
+      - "src/rag_index.py"
+      - "src/rag.py"
+      - "src/qa_fallback.py"
+  workflow_dispatch:
+
+jobs:
+  rag:
+    name: Reindex and evaluate RAG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Reindex knowledge into Supabase
+        if: github.event_name != 'pull_request'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python scripts/reindex_knowledge.py
+
+      - name: Evaluate retrieval quality
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python scripts/eval_rag.py
