@@ -254,6 +254,39 @@ def should_use_llm(
     return top_score >= relevance_threshold and is_usable_rag_context(rag_context)
 
 
+def _answer_structured_faq(
+    query: str,
+    *chunk_lists: list[KnowledgeChunk],
+) -> str | None:
+    normalized = _normalize(query)
+
+    if _matches_any(normalized, _REFUND_PATTERNS):
+        for chunks in chunk_lists:
+            refund_answer = _find_faq_answer(
+                "можно ли вернуть деньги если курс не подошел",
+                chunks,
+            )
+            if refund_answer:
+                return refund_answer
+
+    if _matches_any(normalized, _INSTALLMENT_PATTERNS):
+        for chunks in chunk_lists:
+            installment_answer = _installment_answer(chunks)
+            if installment_answer:
+                return installment_answer
+
+    if (
+        _matches_any(normalized, _PACKAGE_PATTERNS)
+        or _matches_any(normalized, _RECOMMENDATION_PATTERNS)
+    ):
+        for chunks in chunk_lists:
+            faq_answer = _find_faq_answer(query, chunks)
+            if faq_answer:
+                return faq_answer
+
+    return None
+
+
 def answer_from_search(
     query: str,
     search_chunks: list[KnowledgeChunk],
@@ -263,6 +296,14 @@ def answer_from_search(
     relevance_threshold: float = 0.55,
 ) -> tuple[str | None, str | None]:
     """Сначала отвечает по результатам поиска, затем — по полной локальной базе."""
+    normalized = _normalize(query)
+
+    if _matches_any(normalized, _STRUCTURED_FAQ_PATTERNS):
+        structured_answer = _answer_structured_faq(query, search_chunks, local_chunks)
+        if structured_answer:
+            found_in_search = _answer_structured_faq(query, search_chunks) is not None
+            return structured_answer, "search_rule" if found_in_search else "local_rule"
+
     if search_chunks:
         answer = answer_from_knowledge(query, search_chunks)
         if answer:
@@ -339,6 +380,9 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
         return _program_answer(program)
 
     if chunks:
+        if _matches_any(normalized, _STRUCTURED_FAQ_PATTERNS):
+            return None
+
         ranked = sorted(
             chunks,
             key=lambda chunk: (_score_chunk(query, chunk), len(chunk.text)),
