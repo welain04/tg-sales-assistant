@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     max_history_messages: int = 10
     max_rag_chunks: int = 3
 
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    openai_api_key: str = ""
+    rag_embedding_model: str = "text-embedding-3-small"
+    rag_embedding_dimensions: int = 1536
+    rag_chunk_size: int = 800
+    rag_chunk_overlap: int = 100
+    rag_embedding_batch_size: int = 100
+    rag_similarity_threshold: float = 0.55
+
     @property
     def project_root(self) -> Path:
         return Path(__file__).resolve().parent.parent

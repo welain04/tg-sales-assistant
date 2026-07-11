@@ -11,7 +11,7 @@ from src.llm import AssistantLLM
 from src.notifications import notify_manager_escalation, notify_manager_lead
 from src.output_guard import sanitize_llm_answer
 from src.qa_fallback import answer_from_knowledge, generic_qa_fallback
-from src.rag import best_chunk_score, retrieve_context
+from src.rag import KnowledgeRetriever, format_retrieved_context
 from src.recommendation import match_known_program, recommend_from_choices
 from src.session import FlowState, QA_CHECK_QUESTION, UserSession, WELCOME_MESSAGE
 from src.sheets import submit_lead
@@ -213,8 +213,8 @@ async def _handle_qualification_callback(
         return
 
     llm: AssistantLLM = context.application.bot_data["llm"]
-    knowledge = context.application.bot_data["knowledge"]
-    await _finish_qualification(update, context, session, llm, knowledge)
+    retriever: KnowledgeRetriever = context.application.bot_data["retriever"]
+    await _finish_qualification(update, context, session, llm, retriever)
 
 
 async def handle_flow_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -234,16 +234,17 @@ async def handle_flow_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     llm: AssistantLLM = context.application.bot_data["llm"]
-    knowledge = context.application.bot_data["knowledge"]
+    retriever: KnowledgeRetriever = context.application.bot_data["retriever"]
+    knowledge = retriever.local_chunks
 
     await _safe_typing(update)
 
     if session.state == FlowState.QUALIFICATION:
         await _handle_qualification_text(update, context, session, user_text)
     elif session.state == FlowState.QA:
-        await _handle_qa(update, context, session, llm, knowledge, user_text)
+        await _handle_qa(update, context, session, llm, retriever, knowledge, user_text)
     elif session.state == FlowState.AWAITING_QA_CHECK:
-        await _handle_qa_check(update, context, session, llm, knowledge, user_text)
+        await _handle_qa_check(update, context, session, llm, retriever, knowledge, user_text)
     elif session.state == FlowState.COLLECT_NAME:
         await _handle_collect_name(update, session, user_text)
     elif session.state == FlowState.COLLECT_EMAIL:
@@ -312,16 +313,15 @@ async def _finish_qualification(
     context: ContextTypes.DEFAULT_TYPE,
     session: UserSession,
     llm: AssistantLLM,
-    knowledge: list,
+    retriever: KnowledgeRetriever,
 ) -> None:
     chat = update.effective_chat
 
     level, program, explanation = recommend_from_choices(session.qualification_choices)
 
     try:
-        rag_context = retrieve_context(
+        rag_context = retriever.retrieve_context(
             query=" ".join(session.qualification_answers),
-            chunks=knowledge,
             max_chunks=settings.max_rag_chunks,
         )
         llm_level, llm_program, llm_explanation = await llm.recommend(
@@ -355,6 +355,7 @@ async def _handle_qa(
     context: ContextTypes.DEFAULT_TYPE,
     session: UserSession,
     llm: AssistantLLM,
+    retriever: KnowledgeRetriever,
     knowledge: list,
     user_text: str,
 ) -> None:
@@ -377,17 +378,18 @@ async def _handle_qa(
     ):
         return
 
-    rag_context = retrieve_context(
+    retrieved = retriever.search(
         query=user_text,
-        chunks=knowledge,
         max_chunks=settings.max_rag_chunks,
     )
+    rag_context = format_retrieved_context(retrieved)
+    top_score = retrieved[0].similarity if retrieved else 0.0
 
     answer = answer_from_knowledge(user_text, knowledge)
     force_escalation = False
 
     if not answer:
-        if best_chunk_score(user_text, knowledge) == 0:
+        if top_score < settings.rag_similarity_threshold:
             answer = generic_qa_fallback()
         else:
             try:
@@ -431,6 +433,7 @@ async def _handle_qa_check(
     context: ContextTypes.DEFAULT_TYPE,
     session: UserSession,
     llm: AssistantLLM,
+    retriever: KnowledgeRetriever,
     knowledge: list,
     user_text: str,
 ) -> None:
@@ -460,7 +463,7 @@ async def _handle_qa_check(
         return
 
     session.state = FlowState.QA
-    await _handle_qa(update, context, session, llm, knowledge, user_text)
+    await _handle_qa(update, context, session, llm, retriever, knowledge, user_text)
 
 
 async def _handle_collect_name(

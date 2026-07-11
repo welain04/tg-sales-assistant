@@ -8,7 +8,7 @@ from src.config import settings
 from src.flow import handle_flow_callback, handle_flow_message, reset_session, start_flow
 from src.llm import AssistantLLM
 from src.prompts import load_system_prompt
-from src.rag import load_knowledge
+from src.rag import KnowledgeRetriever
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -40,8 +40,12 @@ async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 def main() -> None:
-    knowledge = load_knowledge(settings.knowledge_dir)
-    logger.info("Loaded %s knowledge chunks from %s", len(knowledge), settings.knowledge_dir)
+    retriever = KnowledgeRetriever()
+    logger.info(
+        "Knowledge retriever ready: %s local chunks, vector=%s",
+        len(retriever.local_chunks),
+        retriever.vector_enabled,
+    )
 
     system_prompt = load_system_prompt(settings.system_prompt_path)
     logger.info("Loaded system prompt from %s", settings.system_prompt_path)
@@ -52,7 +56,8 @@ def main() -> None:
         .build()
     )
     application.bot_data["llm"] = AssistantLLM(system_prompt)
-    application.bot_data["knowledge"] = knowledge
+    application.bot_data["retriever"] = retriever
+    application.bot_data["knowledge"] = retriever.local_chunks
 
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
