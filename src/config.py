@@ -10,8 +10,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    telegram_bot_token: str
-    groq_api_key: str
+    telegram_bot_token: str = ""
+    groq_api_key: str = ""
     google_sheets_webhook_url: str = ""
     manager_telegram_chat_id: str = ""
     openai_base_url: str = "https://api.groq.com/openai/v1"
@@ -43,6 +43,21 @@ class Settings(BaseSettings):
     @property
     def knowledge_dir(self) -> Path:
         return self.project_root / "knowledge"
+
+    def require_bot_credentials(self) -> None:
+        missing = [
+            name
+            for name, value in (
+                ("TELEGRAM_BOT_TOKEN", self.telegram_bot_token),
+                ("GROQ_API_KEY", self.groq_api_key),
+            )
+            if not value.strip()
+        ]
+        if missing:
+            raise ValueError(
+                "Missing required environment variables for bot startup: "
+                + ", ".join(missing)
+            )
 
 
 settings = Settings()

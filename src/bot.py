@@ -40,6 +40,7 @@ async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 def main() -> None:
+    settings.require_bot_credentials()
     retriever = KnowledgeRetriever()
     logger.info(
         "Knowledge retriever ready: %s local chunks, vector=%s",
