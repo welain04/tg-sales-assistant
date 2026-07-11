@@ -1,0 +1,11 @@
+﻿Dataset: rag_eval.json
+Cases: 20
+Recall@3: 90.00% (threshold 85%)
+Recall@5: 90.00% (threshold 95%)
+MRR: 0.842 (threshold 0.80)
+
+Failed cases:
+- фрхЄх ыш т√ шэтхёЄшЎшюээ√х ёютхЄ√ | sources=('faq.md', 'faq.md', 'faq.md') | score=0.543
+- ъръшх єЁютэш яЁюуЁрьь хёЄ№ | sources=('faq.md', 'faq.md', 'faq.md') | score=0.550
+
+RAG evaluation failed.

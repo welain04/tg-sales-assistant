@@ -40,6 +40,30 @@ _REFUND_PATTERNS = (
     r"можно\s+ли\s+вернуть",
 )
 
+_PACKAGE_PATTERNS = (
+    r"пакет",
+    r"нескольк\w+\s+курс",
+)
+
+_RECOMMENDATION_PATTERNS = (
+    r"какой\s+курс\s+выбрать",
+    r"что\s+выбрать",
+    r"с\s+чего\s+начать",
+    r"какой\s+курс\s+подойд",
+    r"какой\s+курс\s+лучше",
+)
+
+# Слишком общие слова — не считаем упоминанием конкретной программы.
+_PROGRAM_STOPWORDS = frozenset({
+    "курс", "курса", "курсов", "курсе", "онлайн", "стартовый", "стартового",
+    "личный", "личного", "первые", "первых", "практикум", "персональная",
+    "стратегия", "база", "базы", "нуля", "нуль", "дельта", "дельты", "бюджет",
+    "бюджета", "капитал", "капитала", "цели", "целей", "финансовая", "финансовой",
+    "финансах", "финансов", "инвестор", "инвестора", "новичок", "новичку",
+    "новичка", "программ", "программа", "программы", "школа", "школы",
+    "обучение", "обучения", "стоит", "цена", "рублей",
+})
+
 
 def _normalize(text: str) -> str:
     return text.strip().lower().replace("ё", "е")
@@ -77,10 +101,12 @@ def _program_mentioned(query: str, program) -> bool:
     )
     for marker in markers:
         compact = re.sub(r"[«»\"'']", "", marker)
-        if compact and compact in query:
+        if len(compact) >= 12 and compact in query:
             return True
-        for part in re.findall(r"[а-яa-z0-9]{4,}", compact):
-            if part in query:
+        for part in re.findall(r"[а-яa-z0-9]{5,}", compact):
+            if part in _PROGRAM_STOPWORDS:
+                continue
+            if re.search(rf"(?<![а-яa-z0-9]){re.escape(part)}", query):
                 return True
     return False
 
@@ -171,6 +197,26 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
     if _matches_any(normalized, _CATALOG_PATTERNS):
         return _catalog_answer()
 
+    if _matches_any(normalized, _REFUND_PATTERNS):
+        refund_answer = _find_faq_answer(
+            "можно ли вернуть деньги если курс не подошел",
+            chunks,
+        )
+        if refund_answer:
+            return refund_answer
+
+    if (
+        _matches_any(normalized, _PACKAGE_PATTERNS)
+        or _matches_any(normalized, _RECOMMENDATION_PATTERNS)
+    ):
+        faq_answer = _find_faq_answer(query, chunks)
+        if faq_answer:
+            return faq_answer
+
+    faq_answer = _find_faq_answer(query, chunks)
+    if faq_answer:
+        return faq_answer
+
     price_answer = _price_answer(query)
     if price_answer:
         return price_answer
@@ -183,15 +229,6 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
     program = _find_program(query)
     if program:
         return _program_answer(program)
-
-    faq_answer = _find_faq_answer(query, chunks)
-    if faq_answer:
-        return faq_answer
-
-    if _matches_any(normalized, _REFUND_PATTERNS):
-        refund_answer = _find_faq_answer("можно ли вернуть деньги если курс не подошел", chunks)
-        if refund_answer:
-            return refund_answer
 
     if chunks:
         ranked = sorted(
