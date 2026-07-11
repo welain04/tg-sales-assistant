@@ -61,6 +61,14 @@ def _keyword_score(query: str, chunk: KnowledgeChunk) -> float:
     return overlap / len(query_tokens)
 
 
+def _score_chunk(query: str, chunk: KnowledgeChunk) -> int:
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return 0
+    chunk_tokens = _tokenize(chunk.text)
+    return len(query_tokens & chunk_tokens)
+
+
 def format_retrieved_context(chunks: list[RetrievedChunk]) -> str:
     if not chunks:
         return "Контекст не найден. База знаний пуста."
