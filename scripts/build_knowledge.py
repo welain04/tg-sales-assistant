@@ -137,8 +137,10 @@ def build_price_faq_md(catalog: SchoolCatalog) -> str:
     lines.extend(
         [
             "Вопрос: Какие программы есть в школе «Финансист»?",
-            f"Ответ: В школе четыре основные программы: {price_list}. "
-            f"Также есть пакеты со скидкой до {max_package_savings} рублей.",
+            (
+                f"Ответ: В школе «{catalog.school_name}» четыре основные программы: {price_list}. "
+                f"Также есть пакеты со скидкой до {max_package_savings} рублей."
+            ),
             "",
         ]
     )

@@ -8,27 +8,27 @@
     {
       "question": "какие есть программы?",
       "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
-      "must_contain": ["Финансист", "2990", "5000"]
+      "must_contain": ["Финансист", "@price:financial-base", "@price:budget-delta"]
     },
     {
       "question": "сколько стоит базовый курс",
       "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
-      "must_contain": ["2990"]
+      "must_contain": ["@price:financial-base"]
     },
     {
       "question": "сколько стоит практикум личный бюджет",
       "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
-      "must_contain": ["5000"]
+      "must_contain": ["@price:budget-delta"]
     },
     {
       "question": "сколько стоит курс первые инвестиции",
       "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
-      "must_contain": ["10000"]
+      "must_contain": ["@price:first-investments"]
     },
     {
       "question": "сколько стоит капитал под цели",
       "expected_sources": ["generated/catalog.md", "generated/products.txt", "generated/price_faq.md"],
-      "must_contain": ["15000"]
+      "must_contain": ["@price:capital-goals"]
     },
     {
       "question": "можно вернуть деньги",
@@ -43,7 +43,7 @@
     {
       "question": "есть ли пакеты из нескольких курсов",
       "expected_sources": ["generated/packages.md", "generated/price_faq.md"],
-      "must_contain": ["Финансовый фундамент", "7000"]
+      "must_contain": ["Финансовый фундамент", "@price:package:financial-fundament"]
     },
     {
       "question": "сколько длится обучение",
@@ -73,12 +73,12 @@
     {
       "question": "какой курс выбрать новичку",
       "expected_sources": ["generated/price_faq.md", "generated/products.txt"],
-      "must_contain": ["Финансовая база", "2990"]
+      "must_contain": ["Финансовая база", "@price:financial-base"]
     },
     {
       "question": "расскажите о программе для растущего инвестора",
       "expected_sources": ["generated/catalog.md", "generated/products.txt"],
-      "must_contain": ["Первые инвестиции", "10000"]
+      "must_contain": ["Первые инвестиции", "@price:first-investments"]
     },
     {
       "question": "есть ли рассрочка",
@@ -103,7 +103,7 @@
     {
       "question": "полная траектория пакет цена",
       "expected_sources": ["generated/packages.md", "generated/price_faq.md"],
-      "must_contain": ["28000"]
+      "must_contain": ["@price:package:full-track"]
     }
   ]
 }

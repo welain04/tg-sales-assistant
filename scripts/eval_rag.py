@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.eval_catalog import expand_eval_keywords
 from src.rag import KnowledgeRetriever, RetrievedChunk
 
 
@@ -50,7 +51,7 @@ def _load_dataset(path: Path) -> tuple[list[EvalCase], EvalThresholds]:
         EvalCase(
             question=item["question"],
             expected_sources=tuple(item.get("expected_sources", [])),
-            must_contain=tuple(item.get("must_contain", [])),
+            must_contain=expand_eval_keywords(item.get("must_contain", [])),
         )
         for item in data["cases"]
     ]

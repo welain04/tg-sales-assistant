@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.config import settings
+from src.eval_catalog import expand_eval_keywords
 from src.output_guard import sanitize_llm_answer
 from src.qa_fallback import answer_from_search, should_use_llm, unknown_qa_fallback
 from src.rag import KnowledgeChunk, KnowledgeRetriever, format_retrieved_context
@@ -44,7 +45,7 @@ def _load_dataset(path: Path) -> tuple[list[FallbackCase], list[SanitizeCase]]:
         FallbackCase(
             question=item["question"],
             expected_source=item["expected_source"],
-            must_contain=tuple(item.get("must_contain", [])),
+            must_contain=expand_eval_keywords(item.get("must_contain", [])),
             must_not_contain=tuple(item.get("must_not_contain", [])),
         )
         for item in data["cases"]
