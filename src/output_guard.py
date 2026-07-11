@@ -1,5 +1,6 @@
 import re
 
+from src.qa_fallback import UNKNOWN_QA_MESSAGE
 from src.recommendation import PROGRAMS
 
 _INVESTMENT_OUTPUT_PATTERNS = (
@@ -18,9 +19,19 @@ _INTERNAL_LEAK_PATTERNS = (
     r"исходн(?:ый|ого)\s+код",
 )
 
-_SAFE_FALLBACK = (
-    "По этому вопросу лучше подключится менеджер — "
-    "могу передать ваш запрос, он свяжется с вами."
+_SAFE_FALLBACK = UNKNOWN_QA_MESSAGE
+
+_ADMISSION_PATTERNS = (
+    r"нет\s+информации",
+    r"информаци\w*\s+недостаточно",
+    r"не\s+могу\s+ответить",
+    r"в\s+контексте\s+нет",
+    r"не\s+нашел",
+    r"не\s+нашёл",
+    r"не\s+знаю",
+    r"нет\s+точного\s+ответа",
+    r"передам\s+вопрос\s+менеджер",
+    r"передать\s+вопрос\s+менеджер",
 )
 
 _KNOWN_PRICES = {program.price for program in PROGRAMS}
@@ -41,7 +52,27 @@ def _extract_prices(text: str) -> set[str]:
     return {match.group(0).strip() for match in _PRICE_RE.finditer(text)}
 
 
+def _admits_unknown(answer: str) -> bool:
+    return _matches_any(answer, _ADMISSION_PATTERNS)
+
+
+def _has_unknown_program(answer: str, rag_context: str) -> bool:
+    if _admits_unknown(answer):
+        return False
+
+    normalized_answer = _normalize(answer)
+    normalized_context = _normalize(rag_context)
+    for program in PROGRAMS:
+        compact = re.sub(r"[«»\"'']", "", _normalize(program.program))
+        if len(compact) >= 12 and compact in normalized_answer and compact not in normalized_context:
+            return True
+    return False
+
+
 def _has_unknown_price(answer: str, rag_context: str) -> bool:
+    if _admits_unknown(answer):
+        return False
+
     answer_prices = _extract_prices(answer)
     if not answer_prices:
         return False
@@ -78,6 +109,9 @@ def sanitize_llm_answer(answer: str, rag_context: str) -> tuple[str, bool]:
             "инвестиционные рекомендации. Могу рассказать о наших программах обучения.",
             False,
         )
+
+    if _has_unknown_program(text, rag_context):
+        return _SAFE_FALLBACK, True
 
     if _has_unknown_price(text, rag_context):
         return _SAFE_FALLBACK, True

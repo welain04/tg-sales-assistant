@@ -101,6 +101,13 @@ def format_retrieval_log(
     return " | ".join(parts)
 
 
+def is_usable_rag_context(rag_context: str) -> bool:
+    normalized = rag_context.strip().lower()
+    if not normalized:
+        return False
+    return "контекст не найден" not in normalized and "база знаний пуста" not in normalized
+
+
 class KnowledgeRetriever:
     def __init__(self, config: Settings | None = None) -> None:
         self._config = config or settings

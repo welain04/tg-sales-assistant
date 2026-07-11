@@ -216,20 +216,77 @@ _LOCAL_FALLBACK_PATTERNS = (
     *_RECOMMENDATION_PATTERNS,
 )
 
+_DETERMINISTIC_LOCAL_PATTERNS = (
+    *_CATALOG_PATTERNS,
+    *_LEVEL_PATTERNS,
+)
+
+_STRUCTURED_FAQ_PATTERNS = (
+    *_REFUND_PATTERNS,
+    *_INSTALLMENT_PATTERNS,
+    *_PACKAGE_PATTERNS,
+    *_RECOMMENDATION_PATTERNS,
+)
+
+UNKNOWN_QA_MESSAGE = (
+    "В базе знаний школы нет точного ответа на этот вопрос. "
+    "Могу рассказать о программах, стоимости, формате обучения и возврате — "
+    "или передать вопрос менеджеру."
+)
+
+
+def unknown_qa_fallback() -> str:
+    return UNKNOWN_QA_MESSAGE
+
+
+def generic_qa_fallback() -> str:
+    return unknown_qa_fallback()
+
+
+def should_use_llm(
+    *,
+    top_score: float,
+    relevance_threshold: float,
+    rag_context: str,
+) -> bool:
+    from src.rag import is_usable_rag_context
+
+    return top_score >= relevance_threshold and is_usable_rag_context(rag_context)
+
 
 def answer_from_search(
     query: str,
     search_chunks: list[KnowledgeChunk],
     local_chunks: list[KnowledgeChunk],
+    *,
+    top_score: float = 0.0,
+    relevance_threshold: float = 0.55,
 ) -> tuple[str | None, str | None]:
     """Сначала отвечает по результатам поиска, затем — по полной локальной базе."""
     if search_chunks:
         answer = answer_from_knowledge(query, search_chunks)
         if answer:
-            return answer, "search_rule"
+            normalized = _normalize(query)
+            if top_score >= relevance_threshold or _matches_any(
+                normalized,
+                _DETERMINISTIC_LOCAL_PATTERNS + _STRUCTURED_FAQ_PATTERNS,
+            ):
+                return answer, "search_rule"
 
     normalized = _normalize(query)
-    if _matches_any(normalized, _LOCAL_FALLBACK_PATTERNS):
+    if _matches_any(normalized, _DETERMINISTIC_LOCAL_PATTERNS):
+        answer = answer_from_knowledge(query, local_chunks)
+        if answer:
+            return answer, "local_deterministic"
+
+    if _matches_any(normalized, _PRICE_PATTERNS) and (
+        _find_program(query) is not None or top_score >= relevance_threshold
+    ):
+        answer = answer_from_knowledge(query, local_chunks)
+        if answer:
+            return answer, "local_deterministic"
+
+    if top_score >= relevance_threshold and _matches_any(normalized, _STRUCTURED_FAQ_PATTERNS):
         answer = answer_from_knowledge(query, local_chunks)
         if answer:
             return answer, "local_rule"
@@ -293,10 +350,3 @@ def answer_from_knowledge(query: str, chunks: list[KnowledgeChunk]) -> str | Non
                 return chunk_answer
 
     return None
-
-
-def generic_qa_fallback() -> str:
-    return (
-        "Могу рассказать о программах школы, их стоимости и содержании. "
-        "Например, спросите: «какие есть программы?»"
-    )

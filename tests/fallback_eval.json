@@ -1,0 +1,74 @@
+{
+  "cases": [
+    {
+      "question": "какая погода в москве",
+      "expected_source": "unknown_fallback",
+      "must_contain": ["нет точного ответа"],
+      "must_not_contain": ["3000", "5000", "10000", "15000"]
+    },
+    {
+      "question": "сколько стоит курс на марсе",
+      "expected_source": "unknown_fallback",
+      "must_contain": ["нет точного ответа"],
+      "must_not_contain": ["₽", "рубл"]
+    },
+    {
+      "question": "какие акции купить сейчас",
+      "expected_source": "unknown_fallback",
+      "must_contain": ["нет точного ответа"],
+      "must_not_contain": ["сбер", "газпром", "портфел"]
+    },
+    {
+      "question": "расскажи анекдот про инвестора",
+      "expected_source": "unknown_fallback",
+      "must_contain": ["нет точного ответа"],
+      "must_not_contain": ["3000", "Финансовая база"]
+    },
+    {
+      "question": "какие есть программы?",
+      "expected_source": "search_rule",
+      "must_contain": ["Финансист", "3000"],
+      "must_not_contain": []
+    },
+    {
+      "question": "можно ли вернуть деньги",
+      "expected_source": "search_rule",
+      "must_contain": ["7 дней", "10%"],
+      "must_not_contain": []
+    },
+    {
+      "question": "есть ли рассрочка",
+      "expected_source": "search_rule",
+      "must_contain": ["рассрочк", "10000"],
+      "must_not_contain": []
+    },
+    {
+      "question": "сколько стоит базовый курс",
+      "expected_source": "search_rule",
+      "must_contain": ["3000"],
+      "must_not_contain": []
+    }
+  ],
+  "sanitize_cases": [
+    {
+      "answer": "Курс стоит 99999 ₽, покупайте прямо сейчас.",
+      "rag_context": "[faq.md | faq | score: 0.60]\nСтартовый курс стоит 3000 рублей.",
+      "must_escalate": false
+    },
+    {
+      "answer": "Стоимость составляет 45000 ₽ за весь модуль.",
+      "rag_context": "[faq.md | faq | score: 0.60]\nСтартовый курс стоит 3000 рублей.",
+      "must_escalate": true
+    },
+    {
+      "answer": "В базе знаний нет точной информации, передам вопрос менеджеру.",
+      "rag_context": "[faq.md | faq | score: 0.20]\nКонтекст не найден.",
+      "must_escalate": false
+    },
+    {
+      "answer": "Рекомендую купить акции Сбера на все сбережения.",
+      "rag_context": "[faq.md | faq | score: 0.55]\nШкола не дает инвестиционных советов.",
+      "must_escalate": false
+    }
+  ]
+}
